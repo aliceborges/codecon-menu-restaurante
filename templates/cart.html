@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Carrinho - Sakura Sushi{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h1>🛒 Seu Carrinho</h1>
+    <p>Revise seus itens antes de continuar</p>
+</section>
+
+<section class="cart-section">
+    <div id="cartItems" class="cart-items">
+        <!-- Itens serão carregados via JS -->
+    </div>
+    
+    <div id="emptyCart" class="empty-cart" style="display: none;">
+        <span class="empty-icon">🍽️</span>
+        <p>Seu carrinho está vazio</p>
+        <a href="/" class="btn-primary">Ver Cardápio</a>
+    </div>
+    
+    <div class="cart-summary" id="cartSummary">
+        <div class="summary-row">
+            <span>Subtotal:</span>
+            <span id="subtotal">R$ 0,00</span>
+        </div>
+        <div class="summary-row">
+            <span>Taxa de Entrega:</span>
+            <span id="deliveryFee">R$ 5,00</span>
+        </div>
+        <div class="summary-row total">
+            <span>Total:</span>
+            <span id="total">R$ 0,00</span>
+        </div>
+    </div>
+</section>
+
+<div class="nav-buttons">
+    <a href="/" class="btn-secondary">← Voltar ao Cardápio</a>
+    <button id="btnContinue" class="btn-primary" onclick="goToUser()">Continuar →</button>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadCart() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const container = document.getElementById('cartItems');
+    const emptyCart = document.getElementById('emptyCart');
+    const cartSummary = document.getElementById('cartSummary');
+    const btnContinue = document.getElementById('btnContinue');
+    
+    if (cart.length === 0) {
+        container.style.display = 'none';
+        cartSummary.style.display = 'none';
+        emptyCart.style.display = 'flex';
+        btnContinue.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    cartSummary.style.display = 'block';
+    emptyCart.style.display = 'none';
+    btnContinue.style.display = 'block';
+    
+    container.innerHTML = cart.map((item, index) => {
+        const compTotal = item.complementos.reduce((s, c) => s + c.preco, 0);
+        const itemTotal = (item.preco + compTotal) * item.quantidade;
+        
+        return `
+            <div class="cart-item" data-index="${index}">
+                <div class="item-main">
+                    <h4>${item.nome}</h4>
+                    ${item.complementos.length > 0 ? `
+                        <p class="item-complementos">
+                            + ${item.complementos.map(c => c.nome).join(', ')}
+                        </p>
+                    ` : ''}
+                    <p class="item-price">R$ ${itemTotal.toFixed(2)}</p>
+                </div>
+                <div class="item-controls">
+                    <button class="btn-qty" onclick="updateQty(${index}, -1)">−</button>
+                    <span class="qty-value">${item.quantidade}</span>
+                    <button class="btn-qty" onclick="updateQty(${index}, 1)">+</button>
+                    <button class="btn-remove" onclick="removeItem(${index})">🗑️</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    updateSummary();
+}
+
+function updateQty(index, delta) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart[index].quantidade += delta;
+    
+    if (cart[index].quantidade <= 0) {
+        cart.splice(index, 1);
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    loadCart();
+}
+
+function removeItem(index) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart.splice(index, 1);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    loadCart();
+}
+
+function updateSummary() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const subtotal = cart.reduce((sum, item) => {
+        let compTotal = item.complementos.reduce((s, c) => s + c.preco, 0);
+        return sum + ((item.preco + compTotal) * item.quantidade);
+    }, 0);
+    
+    const deliveryFee = cart.length > 0 ? 5.00 : 0;
+    const total = subtotal + deliveryFee;
+    
+    document.getElementById('subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+    document.getElementById('deliveryFee').textContent = `R$ ${deliveryFee.toFixed(2)}`;
+    document.getElementById('total').textContent = `R$ ${total.toFixed(2)}`;
+}
+
+function goToUser() {
+    window.location.href = '/dados';
+}
+
+loadCart();
+</script>
+{% endblock %}

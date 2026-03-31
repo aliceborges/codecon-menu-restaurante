@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Pedidos - {{ tema.nome if tema else 'Cardápio' }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h1>📜 Histórico de Pedidos</h1>
+    <p>Veja seus pedidos anteriores</p>
+</section>
+
+<section class="history-section">
+    <!-- Loading -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Carregando pedidos...</p>
+    </div>
+    
+    <!-- Lista de Pedidos -->
+    <div id="ordersList" class="orders-list" style="display: none;">
+        <!-- Pedidos serão carregados aqui -->
+    </div>
+    
+    <!-- Vazio -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+        <span class="empty-icon">🍽️</span>
+        <h3>Nenhum pedido encontrado</h3>
+        <p>Você ainda não realizou nenhum pedido conosco.</p>
+        <a href="/" class="btn-primary">Fazer Primeiro Pedido</a>
+    </div>
+</section>
+
+<div class="nav-buttons">
+    <a href="/" class="btn-secondary">← Voltar ao Cardápio</a>
+    <a href="/acompanhar" class="btn-primary">Acompanhar Pedido</a>
+</div>
+
+<style>
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.order-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.order-number {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.order-date {
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+.order-status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.order-status-badge.novo { background: #e3f2fd; color: #1976d2; }
+.order-status-badge.confirmado { background: #e8f5e9; color: #388e3c; }
+.order-status-badge.preparando { background: #fff3e0; color: #f57c00; }
+.order-status-badge.pronto { background: #fce4ec; color: #c2185b; }
+.order-status-badge.saiu_entrega { background: #f3e5f5; color: #7b1fa2; }
+.order-status-badge.entregue { background: #e8f5e9; color: #2e7d32; }
+.order-status-badge.cancelado { background: #ffebee; color: #c62828; }
+
+.order-card-body {
+    margin-bottom: 15px;
+}
+
+.order-total {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.order-card-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.order-card-actions a,
+.order-card-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+}
+
+.btn-view {
+    background: var(--background);
+    color: var(--text);
+}
+
+.btn-rate {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-rated {
+    background: #e8f5e9;
+    color: #2e7d32;
+    cursor: default;
+}
+
+.btn-login-required {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.empty-state h3 {
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: var(--text-light);
+    margin-bottom: 20px;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentUser = null;
+
+// Verificar usuário logado
+fetch('/api/user')
+    .then(r => r.json())
+    .then(data => {
+        currentUser = data.logged_in ? data.user : null;
+        loadOrders();
+    });
+
+function loadOrders() {
+    const savedOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    
+    if (savedOrders.length === 0) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+    }
+    
+    fetch('/api/pedidos/buscar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pedidos: savedOrders })
+    })
+    .then(r => r.json())
+    .then(orders => {
+        document.getElementById('loading').style.display = 'none';
+        
+        if (orders.length === 0) {
+            document.getElementById('emptyState').style.display = 'block';
+            return;
+        }
+        
+        document.getElementById('ordersList').style.display = 'flex';
+        renderOrders(orders);
+    })
+    .catch(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+    });
+}
+
+function renderOrders(orders) {
+    const container = document.getElementById('ordersList');
+    
+    container.innerHTML = orders.map(order => {
+        const statusClass = order.status;
+        const statusLabel = getStatusLabel(order.status);
+        const isRated = order.avaliacao_restaurante !== null;
+        
+        // Definir botão de avaliar baseado no login
+        let rateButton;
+        if (isRated) {
+            rateButton = '<span class="btn-rated">⭐ Avaliado</span>';
+        } else if (!currentUser) {
+            rateButton = `<a href="/login?next=/avaliar?pedido=${order.id}" class="btn-login-required">🔒 Login p/ Avaliar</a>`;
+        } else {
+            rateButton = `<a href="/avaliar?pedido=${order.id}" class="btn-rate">⭐ Avaliar</a>`;
+        }
+        
+        return `
+            <div class="order-card">
+                <div class="order-card-header">
+                    <div>
+                        <div class="order-number">Pedido #${order.id}</div>
+                        <div class="order-date">${order.data}</div>
+                    </div>
+                    <span class="order-status-badge ${statusClass}">${statusLabel}</span>
+                </div>
+                <div class="order-card-body">
+                    <div class="order-total">R$ ${order.valores.total.toFixed(2)}</div>
+                </div>
+                <div class="order-card-actions">
+                    <a href="/acompanhar?pedido=${order.id}" class="btn-view">📍 Acompanhar</a>
+                    ${rateButton}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'novo': 'Novo',
+        'confirmado': 'Confirmado',
+        'preparando': 'Preparando',
+        'pronto': 'Pronto',
+        'saiu_entrega': 'Saiu p/ Entrega',
+        'entregue': 'Entregue',
+        'cancelado': 'Cancelado'
+    };
+    return labels[status] || status;
+}
+</script>
+{% endblock %}

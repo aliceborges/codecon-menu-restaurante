@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Configurações</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #8B4513;
+        }
+        
+        /* Simulador de Horário */
+        .time-simulator {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .time-simulator input[type="time"] {
+            padding: 12px 16px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #8B4513;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5D2E0C;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .current-status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 10px;
+        }
+        
+        .current-status h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-badge.almoco {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-badge.jantar {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-badge.fechado {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .info-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .quick-times {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .quick-times button {
+            padding: 8px 16px;
+            font-size: 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .quick-times button:hover {
+            background: #e0e0e0;
+        }
+        
+        a.back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        a.back-link:hover {
+            color: #333;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+        
+        .message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        /* Tema atual (fixo churrasco) */
+        .theme-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .theme-emoji {
+            font-size: 48px;
+        }
+        
+        .theme-details h3 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .theme-details p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .locked {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Painel Administrativo</h1>
+        
+        <!-- Tema Atual (Fixo) -->
+        <div class="card">
+            <h2>🎨 Tema Atual</h2>
+            <div class="theme-info">
+                <span class="theme-emoji">🥩</span>
+                <div class="theme-details">
+                    <h3>Boi na Brasa</h3>
+                    <p>Churrasco</p>
+                </div>
+                <span class="locked">🔒 Fixo</span>
+            </div>
+        </div>
+        
+        <!-- Simulador de Horário -->
+        <div class="card">
+            <h2>⏰ Simulador de Horário</h2>
+            <p class="info-text">
+                Use esta ferramenta para testar o cardápio em diferentes horários.
+                Após definir, aperte F5 na página do cardápio.
+            </p>
+            
+            <div class="time-simulator" style="margin-top: 20px;">
+                <input type="time" id="horaInput" value="12:00">
+                <button class="btn btn-primary" onclick="aplicarHora()">Aplicar</button>
+                <button class="btn btn-secondary" onclick="resetHora()">Reset</button>
+            </div>
+            
+            <div class="quick-times">
+                <button onclick="setHora('10:00')">10h (Fechado)</button>
+                <button onclick="setHora('12:00')">12h (Almoço)</button>
+                <button onclick="setHora('16:00')">16h (Fechado)</button>
+                <button onclick="setHora('19:00')">19h (Jantar)</button>
+                <button onclick="setHora('23:30')">23:30 (Fechado)</button>
+            </div>
+            
+            <div class="current-status">
+                <h3>Status Atual do Sistema</h3>
+                <div id="statusBadge" class="status-badge">Carregando...</div>
+                <p class="info-text" id="horaAtualText">Hora: --:--</p>
+            </div>
+            
+            <div class="message" id="message"></div>
+        </div>
+        
+        <a href="/" class="back-link">← Voltar ao Cardápio</a>
+    </div>
+    
+    <script>
+        // Carregar status atual
+        async function loadStatus() {
+            try {
+                const res = await fetch('/api/hora');
+                const data = await res.json();
+                
+                const badge = document.getElementById('statusBadge');
+                const horaText = document.getElementById('horaAtualText');
+                const horaInput = document.getElementById('horaInput');
+                
+                badge.className = 'status-badge ' + data.tipo_cardapio;
+                badge.textContent = {
+                    'almoco': 'Almoço Executivo',
+                    'jantar': 'Espeto Corrido',
+                    'fechado': 'Fechado'
+                }[data.tipo_cardapio];
+                
+                horaText.textContent = 'Hora: ' + data.hora_atual;
+                
+                if (data.hora_simulada) {
+                    horaInput.value = data.hora_simulada;
+                }
+            } catch (err) {
+                console.error('Erro ao carregar status:', err);
+            }
+        }
+        
+        function setHora(hora) {
+            document.getElementById('horaInput').value = hora;
+        }
+        
+        async function aplicarHora() {
+            const hora = document.getElementById('horaInput').value;
+            
+            try {
+                const res = await fetch('/api/hora', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hora: hora })
+                });
+                
+                const data = await res.json();
+                
+                const msg = document.getElementById('message');
+                msg.textContent = 'Hora aplicada! Recarregue o cardápio (F5).';
+                msg.className = 'message success';
+                
+                loadStatus();
+            } catch (err) {
+                alert('Erro ao aplicar hora');
+            }
+        }
+        
+        async function resetHora() {
+            try {
+                const res = await fetch('/api/hora', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hora: null })
+                });
+                
+                const data = await res.json();
+                
+                const msg = document.getElementById('message');
+                msg.textContent = 'Hora resetada para o sistema.';
+                msg.className = 'message success';
+                
+                loadStatus();
+            } catch (err) {
+                alert('Erro ao resetar hora');
+            }
+        }
+        
+        loadStatus();
+    </script>
+</body>
+</html>

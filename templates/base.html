@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ tema.nome if tema else 'Cardápio Digital' }}{% endblock %}</title>
+    
+    {% if tema %}
+    <link href="{{ tema.fonte_url }}" rel="stylesheet">
+    {% else %}
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    {% endif %}
+    
+    <link rel="stylesheet" href="{{ url_for('theme_css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        body {
+            font-family: '{{ tema.fonte if tema else 'Noto Sans JP' }}', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        /* Header do usuário */
+        .user-header {
+            position: fixed;
+            top: 0;
+            right: 0;
+            padding: 10px 15px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-header a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        
+        .user-header a:hover {
+            background: white;
+            transform: translateY(-1px);
+        }
+        
+        .user-header img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .user-header .avatar-placeholder {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .login-btn {
+            background: var(--primary) !important;
+            color: white !important;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header do Usuário (canto superior direito) -->
+    <div class="user-header">
+        {% if user %}
+        <a href="/login" title="{{ user.nome }}">
+            {% if user.foto %}
+            <img src="{{ user.foto }}" alt="{{ user.nome }}">
+            {% else %}
+            <div class="avatar-placeholder">{{ user.nome[0] }}</div>
+            {% endif %}
+            <span>{{ user.nome.split()[0] }}</span>
+        </a>
+        {% else %}
+        <a href="/login" class="login-btn">
+            <span>🔑</span>
+            <span>Entrar</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Progresso do Pedido -->
+    {% if request.endpoint not in ['track_order', 'order_history', 'rate_order', 'login', 'auth_google', 'auth_callback'] %}
+    <div class="progress-bar">
+        <div class="step {% if request.endpoint == 'index' %}active{% endif %} {% if request.endpoint in ['cart', 'user', 'payment', 'confirmation'] %}completed{% endif %}">
+            <span class="step-number">1</span>
+            <span class="step-label">Cardápio</span>
+        </div>
+        <div class="step-line {% if request.endpoint in ['cart', 'user', 'payment', 'confirmation'] %}completed{% endif %}"></div>
+        <div class="step {% if request.endpoint == 'cart' %}active{% endif %} {% if request.endpoint in ['user', 'payment', 'confirmation'] %}completed{% endif %}">
+            <span class="step-number">2</span>
+            <span class="step-label">Carrinho</span>
+        </div>
+        <div class="step-line {% if request.endpoint in ['user', 'payment', 'confirmation'] %}completed{% endif %}"></div>
+        <div class="step {% if request.endpoint == 'user' %}active{% endif %} {% if request.endpoint in ['payment', 'confirmation'] %}completed{% endif %}">
+            <span class="step-number">3</span>
+            <span class="step-label">Dados</span>
+        </div>
+        <div class="step-line {% if request.endpoint in ['payment', 'confirmation'] %}completed{% endif %}"></div>
+        <div class="step {% if request.endpoint == 'payment' %}active{% endif %} {% if request.endpoint == 'confirmation' %}completed{% endif %}">
+            <span class="step-number">4</span>
+            <span class="step-label">Pagamento</span>
+        </div>
+    </div>
+    {% else %}
+    <!-- Header simples -->
+    <div class="simple-header">
+        <a href="/" class="logo-link">{{ tema.logo_emoji if tema else '🍽️' }} {{ tema.nome if tema else 'Cardápio' }}</a>
+    </div>
+    {% endif %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Menu de Navegação Fixo -->
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+            <span class="nav-icon">{{ tema.icones.principais if tema else '🍽️' }}</span>
+            <span class="nav-label">Cardápio</span>
+        </a>
+        <a href="/acompanhar" class="nav-item {% if request.endpoint == 'track_order' %}active{% endif %}">
+            <span class="nav-icon">📍</span>
+            <span class="nav-label">Acompanhar</span>
+        </a>
+        <a href="/historico" class="nav-item {% if request.endpoint == 'order_history' %}active{% endif %}">
+            <span class="nav-icon">📜</span>
+            <span class="nav-label">Pedidos</span>
+        </a>
+    </nav>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

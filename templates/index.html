@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}{{ restaurante.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Input escondido para teste de horário */
+.time-test-input {
+    position: fixed;
+    top: 5px;
+    right: 5px;
+    z-index: 1000;
+    opacity: 0.1;
+    transition: opacity 0.3s;
+}
+.time-test-input:hover {
+    opacity: 1;
+}
+.time-test-input input {
+    width: 60px;
+    padding: 4px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.time-test-input button {
+    padding: 4px 8px;
+    font-size: 11px;
+    margin-left: 4px;
+    cursor: pointer;
+}
+
+/* Status de horário */
+.horario-status {
+    background: var(--card-bg);
+    padding: 12px 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.horario-status.aberto {
+    border-left: 4px solid var(--success);
+}
+.horario-status.fechado {
+    border-left: 4px solid #d32f2f;
+}
+.horario-status h3 {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+.horario-status p {
+    font-size: 12px;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* Avaliação do restaurante */
+.restaurant-rating {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+}
+.rating-stars {
+    font-size: 20px;
+    color: #FFD700;
+}
+.rating-text {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 4px;
+}
+
+/* Avaliação dos itens */
+.item-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.item-rating .stars {
+    color: #FFD700;
+}
+.item-rating .count {
+    color: var(--text-light);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Input escondido para testar horário -->
+<div class="time-test-input" title="Simular horário (TESTE)">
+    <input type="time" id="simularHora" value="{{ horario.hora_atual }}">
+    <button onclick="simularHora()">Testar</button>
+    <button onclick="resetHora()">Reset</button>
+</div>
+
+<!-- Informações do Restaurante -->
+<section class="restaurant-info">
+    <div class="logo-container">
+        <div class="logo-emoji">{{ tema.logo_emoji }}</div>
+    </div>
+    <h1>{{ restaurante.nome }}</h1>
+    <p class="descricao">{{ restaurante.descricao }}</p>
+    
+    <!-- Avaliação do Restaurante -->
+    <div class="restaurant-rating">
+        <div class="rating-stars">
+            {% set media = restaurante.avaliacao.media %}
+            {% set total = restaurante.avaliacao.total %}
+            {% for i in range(5) %}
+                {% if i < media|int %}⭐{% else %}☆{% endif %}
+            {% endfor %}
+        </div>
+        <p class="rating-text">
+            {{ "%.1f"|format(media) }} / 5.0 
+            ({{ total }} avaliaç{{ 'ão' if total == 1 else 'ões' }})
+        </p>
+    </div>
+    
+    <div class="info-details">
+        <p>📍 {{ restaurante.endereco }}</p>
+        <p>📞 {{ restaurante.telefone }}</p>
+        <p>🕐 {{ restaurante.horario }}</p>
+    </div>
+</section>
+
+<!-- Status de Horário -->
+<div class="horario-status {{ 'aberto' if horario.tipo != 'fechado' else 'fechado' }}">
+    <h3>{{ horario.mensagem }}</h3>
+    <p>Hora atual: {{ horario.hora_atual }}</p>
+</div>
+
+<!-- Cardápio -->
+{% if horario.tipo != 'fechado' %}
+<section class="menu-section">
+    <h2>Nosso Cardápio</h2>
+    
+    {% for categoria in categorias %}
+    <div class="categoria" id="{{ categoria.id }}">
+        <h3>{{ categoria.icone }} {{ categoria.nome }}</h3>
+        <div class="itens-grid">
+            {% for item in categoria.itens %}
+            <div class="item-card" data-id="{{ item.id }}">
+                <div class="item-imagem">{{ item.imagem }}</div>
+                <div class="item-info">
+                    <!-- Avaliação do Item -->
+                    {% if item.avaliacao.total > 0 %}
+                    <div class="item-rating">
+                        <span class="stars">
+                            {% for i in range(5) %}
+                                {% if i < item.avaliacao.media|int %}⭐{% else %}☆{% endif %}
+                            {% endfor %}
+                        </span>
+                        <span class="count">({{ item.avaliacao.total }})</span>
+                    </div>
+                    {% endif %}
+                    
+                    <h4>{{ item.nome }}</h4>
+                    <p class="item-descricao">{{ item.descricao }}</p>
+                    <p class="item-preco">R$ {{ "%.2f"|format(item.preco) }}</p>
+                    
+                    {% if item.complementos %}
+                    <div class="complementos">
+                        <p class="complementos-title">Complementos:</p>
+                        {% for comp in item.complementos %}
+                        <label class="complemento-label">
+                            <input type="checkbox" class="complemento-check" 
+                                   data-id="{{ comp.id }}" 
+                                   data-nome="{{ comp.nome }}" 
+                                   data-preco="{{ comp.preco }}">
+                            <span>{{ comp.nome }} (+R$ {{ "%.2f"|format(comp.preco) }})</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <button class="btn-add" onclick="addToCart({{ item.id }}, '{{ item.nome }}', {{ item.preco }})">
+                        Adicionar
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</section>
+
+<!-- Botão Flutuante do Carrinho -->
+<a href="/carrinho" class="btn-float-cart" id="btnFloatCart" style="display: none;">
+    <span>🛒</span>
+    <span class="float-cart-total" id="floatCartTotal">R$ 0,00</span>
+    <span class="float-cart-count" id="floatCartCount">0</span>
+</a>
+{% else %}
+<!-- Restaurante Fechado -->
+<section class="fechado-section" style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 60px; margin-bottom: 20px;">😴</div>
+    <h2>Restaurante Fechado</h2>
+    <p style="color: var(--text-light); margin: 15px 0;">
+        Horário de funcionamento:<br>
+        <strong>Almoço:</strong> 11h às 15h<br>
+        <strong>Jantar:</strong> 18h às 23h
+    </p>
+    <p style="font-size: 13px; color: #999; margin-top: 20px;">
+        Use o input no canto superior direito para simular horários
+    </p>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let menuItems = {};
+
+fetch('/api/dados')
+    .then(r => r.json())
+    .then(data => {
+        data.categorias.forEach(cat => {
+            cat.itens.forEach(item => {
+                menuItems[item.id] = item;
+            });
+        });
+    });
+
+function addToCart(itemId, nome, preco) {
+    const card = document.querySelector(`.item-card[data-id="${itemId}"]`);
+    const complementos = [];
+    
+    card.querySelectorAll('.complemento-check:checked').forEach(cb => {
+        complementos.push({
+            id: cb.dataset.id,
+            nome: cb.dataset.nome,
+            preco: parseFloat(cb.dataset.preco)
+        });
+    });
+    
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    cart.push({
+        id: Date.now(),
+        itemId: itemId,
+        nome: nome,
+        preco: preco,
+        complementos: complementos,
+        quantidade: 1
+    });
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartFloat();
+    
+    const btn = card.querySelector('.btn-add');
+    btn.textContent = 'Adicionado! ✓';
+    btn.classList.add('added');
+    setTimeout(() => {
+        btn.textContent = 'Adicionar';
+        btn.classList.remove('added');
+    }, 1000);
+    
+    card.querySelectorAll('.complemento-check:checked').forEach(cb => cb.checked = false);
+}
+
+function updateCartFloat() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const total = cart.reduce((sum, item) => {
+        let compTotal = item.complementos.reduce((s, c) => s + c.preco, 0);
+        return sum + ((item.preco + compTotal) * item.quantidade);
+    }, 0);
+    
+    const count = cart.reduce((sum, item) => sum + item.quantidade, 0);
+    
+    document.getElementById('floatCartTotal').textContent = `R$ ${total.toFixed(2)}`;
+    document.getElementById('floatCartCount').textContent = count;
+    document.getElementById('btnFloatCart').style.display = count > 0 ? 'flex' : 'none';
+}
+
+function simularHora() {
+    const hora = document.getElementById('simularHora').value;
+    fetch('/api/hora', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hora: hora })
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.mensagem + ' (Aperte F5)');
+        location.reload();
+    });
+}
+
+function resetHora() {
+    fetch('/api/hora', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hora: null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert('Hora resetada. (Aperte F5)');
+        location.reload();
+    });
+}
+
+updateCartFloat();
+</script>
+{% endblock %}

@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Avaliar Pedido - {{ tema.nome if tema else 'Cardápio' }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h1>⭐ Avaliar Pedido</h1>
+    <p>Avalie sua experiência com o pedido #{{ pedido_id }}</p>
+</section>
+
+<section class="rate-section">
+    <div id="rateForm" class="rate-form" style="display: none;">
+        
+        <!-- Avaliação do Restaurante -->
+        <div class="rating-block">
+            <h3>Como foi sua experiência geral?</h3>
+            <div class="rating-stars" id="restaurantStars">
+                <span class="star" data-value="1">⭐</span>
+                <span class="star" data-value="2">⭐</span>
+                <span class="star" data-value="3">⭐</span>
+                <span class="star" data-value="4">⭐</span>
+                <span class="star" data-value="5">⭐</span>
+            </div>
+            <p id="restaurantRatingText" class="rating-text">Toque nas estrelas para avaliar</p>
+            
+            <div class="form-group">
+                <label for="comentarioRestaurante">Comentário sobre o restaurante</label>
+                <textarea id="comentarioRestaurante" rows="3" placeholder="Conte-nos sobre sua experiência geral..."></textarea>
+            </div>
+        </div>
+        
+        <!-- Avaliação dos Itens -->
+        <div class="rating-block" id="itensBlock">
+            <h3>Avalie os itens do seu pedido</h3>
+            <div id="itensAvaliar">
+                <!-- Itens serão carregados aqui -->
+            </div>
+        </div>
+        
+        <!-- Botão -->
+        <button id="btnSubmit" class="btn-primary btn-large" onclick="submitRating()" disabled>
+            Enviar Avaliações
+        </button>
+    </div>
+    
+    <!-- Loading -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Carregando...</p>
+    </div>
+    
+    <!-- Sucesso -->
+    <div id="successBox" class="success-box" style="display: none;">
+        <div class="success-icon">🎉</div>
+        <h3>Obrigado pelas avaliações!</h3>
+        <p>Sua opinião é muito importante para nós.</p>
+        <a href="/historico" class="btn-primary">Ver Meus Pedidos</a>
+    </div>
+    
+    <!-- Já Avaliado -->
+    <div id="alreadyRated" class="success-box" style="display: none;">
+        <div class="success-icon">⭐</div>
+        <h3>Pedido já avaliado!</h3>
+        <p>Você já avaliou este pedido anteriormente.</p>
+        <a href="/historico" class="btn-primary">Ver Meus Pedidos</a>
+    </div>
+    
+    <!-- Erro -->
+    <div id="errorBox" class="error-box" style="display: none;">
+        <div class="error-icon">😕</div>
+        <h3>Pedido não encontrado</h3>
+        <a href="/historico" class="btn-primary">Ver Histórico</a>
+    </div>
+</section>
+
+<div class="nav-buttons">
+    <a href="/historico" class="btn-secondary">← Voltar ao Histórico</a>
+</div>
+
+<style>
+.rate-section {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 25px 20px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.rating-block {
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid var(--border);
+}
+
+.rating-block:last-of-type {
+    border-bottom: none;
+}
+
+.rating-block h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: var(--text);
+}
+
+.rating-stars {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.star {
+    font-size: 32px;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.star:hover,
+.star.active {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.rating-text {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-bottom: 15px;
+}
+
+.form-group {
+    margin-top: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Item para avaliar */
+.item-avaliar {
+    background: var(--background);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+.item-avaliar h4 {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.item-avaliar .rating-stars {
+    margin-bottom: 10px;
+}
+
+.item-avaliar .star {
+    font-size: 24px;
+}
+
+.btn-large {
+    width: 100%;
+    padding: 16px;
+}
+
+.btn-large:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.success-box,
+.error-box {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.success-icon,
+.error-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.success-box h3,
+.error-box h3 {
+    margin-bottom: 10px;
+}
+
+.success-box p,
+.error-box p {
+    color: var(--text-light);
+    margin-bottom: 25px;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const orderId = {{ pedido_id }};
+let restaurantRating = 0;
+let itemRatings = {}; // { itemId: { nota: X, comentario: '' } }
+let pedidoItens = [];
+
+// Carregar dados do pedido
+fetch(`/api/pedido/${orderId}`)
+    .then(r => {
+        if (!r.ok) throw new Error('Pedido não encontrado');
+        return r.json();
+    })
+    .then(data => {
+        document.getElementById('loading').style.display = 'none';
+        
+        if (data.avaliacao_restaurante) {
+            document.getElementById('alreadyRated').style.display = 'block';
+            return;
+        }
+        
+        pedidoItens = data.itens;
+        renderItensAvaliar();
+        document.getElementById('rateForm').style.display = 'block';
+    })
+    .catch(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('errorBox').style.display = 'block';
+    });
+
+function renderItensAvaliar() {
+    const container = document.getElementById('itensAvaliar');
+    container.innerHTML = pedidoItens.map(item => `
+        <div class="item-avaliar" data-item-id="${item.itemId}">
+            <h4>${item.quantidade}x ${item.nome}</h4>
+            <div class="rating-stars" data-item-id="${item.itemId}">
+                <span class="star" data-value="1">⭐</span>
+                <span class="star" data-value="2">⭐</span>
+                <span class="star" data-value="3">⭐</span>
+                <span class="star" data-value="4">⭐</span>
+                <span class="star" data-value="5">⭐</span>
+            </div>
+            <div class="form-group">
+                <textarea id="comentario-${item.itemId}" rows="2" placeholder="Comentário sobre este item..." 
+                    onchange="updateItemComentario(${item.itemId}, this.value)"></textarea>
+            </div>
+        </div>
+    `).join('');
+    
+    // Adicionar eventos nas estrelas dos itens
+    document.querySelectorAll('.item-avaliar .star').forEach(star => {
+        star.addEventListener('click', function() {
+            const itemId = this.closest('.item-avaliar').dataset.itemId;
+            const value = parseInt(this.dataset.value);
+            itemRatings[itemId] = itemRatings[itemId] || {};
+            itemRatings[itemId].nota = value;
+            updateItemStars(itemId, value);
+            checkFormValid();
+        });
+    });
+}
+
+function updateItemStars(itemId, value) {
+    const container = document.querySelector(`.item-avaliar[data-item-id="${itemId}"] .rating-stars`);
+    container.querySelectorAll('.star').forEach((star, index) => {
+        if (index < value) star.classList.add('active');
+        else star.classList.remove('active');
+    });
+}
+
+function updateItemComentario(itemId, comentario) {
+    itemRatings[itemId] = itemRatings[itemId] || {};
+    itemRatings[itemId].comentario = comentario;
+}
+
+// Estrelas do restaurante
+document.querySelectorAll('#restaurantStars .star').forEach(star => {
+    star.addEventListener('click', function() {
+        restaurantRating = parseInt(this.dataset.value);
+        updateRestaurantStars();
+        updateRestaurantText();
+        checkFormValid();
+    });
+});
+
+function updateRestaurantStars() {
+    document.querySelectorAll('#restaurantStars .star').forEach((star, index) => {
+        if (index < restaurantRating) star.classList.add('active');
+        else star.classList.remove('active');
+    });
+}
+
+function updateRestaurantText() {
+    const texts = {
+        1: '😞 Muito ruim',
+        2: '😕 Ruim',
+        3: '😐 Regular',
+        4: '😊 Bom',
+        5: '😍 Excelente!'
+    };
+    document.getElementById('restaurantRatingText').textContent = texts[restaurantRating];
+}
+
+function checkFormValid() {
+    // Verifica se restaurante foi avaliado
+    const valid = restaurantRating > 0;
+    document.getElementById('btnSubmit').disabled = !valid;
+}
+
+function submitRating() {
+    if (restaurantRating === 0) return;
+    
+    const comentarioRestaurante = document.getElementById('comentarioRestaurante').value;
+    
+    // Preparar avaliações dos itens
+    const itensAvaliacoes = [];
+    for (const [itemId, dados] of Object.entries(itemRatings)) {
+        if (dados.nota) {
+            itensAvaliacoes.push({
+                item_id: parseInt(itemId),
+                nota: dados.nota,
+                comentario: dados.comentario || ''
+            });
+        }
+    }
+    
+    document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('btnSubmit').textContent = 'Enviando...';
+    
+    fetch(`/api/pedido/${orderId}/avaliacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            restaurante: {
+                nota: restaurantRating,
+                comentario: comentarioRestaurante
+            },
+            itens: itensAvaliacoes
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('rateForm').style.display = 'none';
+            document.getElementById('successBox').style.display = 'block';
+        } else {
+            throw new Error(data.error);
+        }
+    })
+    .catch(err => {
+        alert('Erro ao enviar: ' + err.message);
+        document.getElementById('btnSubmit').disabled = false;
+        document.getElementById('btnSubmit').textContent = 'Enviar Avaliações';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}Acompanhar Pedido - Sakura Sushi{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h1>📍 Acompanhar Pedido</h1>
+    <p>Acompanhe o status do seu pedido em tempo real</p>
+</section>
+
+<section class="track-section">
+    <!-- Buscar Pedido -->
+    <div id="searchBox" class="search-box">
+        <label for="orderId">Digite o número do seu pedido:</label>
+        <div class="search-input-group">
+            <input type="number" id="orderId" placeholder="Ex: 123" value="{{ pedido_id if pedido_id else '' }}">
+            <button onclick="searchOrder()" class="btn-primary">Buscar</button>
+        </div>
+    </div>
+    
+    <!-- Loading -->
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Buscando pedido...</p>
+    </div>
+    
+    <!-- Status do Pedido -->
+    <div id="orderStatus" class="order-status" style="display: none;">
+        <div class="status-header">
+            <h3>Pedido #<span id="statusOrderId"></span></h3>
+            <span id="currentStatus" class="status-badge"></span>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="timeline">
+            <div class="timeline-item" data-status="novo">
+                <div class="timeline-icon">📝</div>
+                <div class="timeline-content">
+                    <strong>Pedido Recebido</strong>
+                    <p>Seu pedido foi registrado</p>
+                </div>
+            </div>
+            
+            <div class="timeline-item" data-status="confirmado">
+                <div class="timeline-icon">✅</div>
+                <div class="timeline-content">
+                    <strong>Pedido Confirmado</strong>
+                    <p>Restaurante confirmou seu pedido</p>
+                </div>
+            </div>
+            
+            <div class="timeline-item" data-status="preparando">
+                <div class="timeline-icon">👨‍🍳</div>
+                <div class="timeline-content">
+                    <strong>Em Preparação</strong>
+                    <p>Seu pedido está sendo preparado</p>
+                </div>
+            </div>
+            
+            <div class="timeline-item" data-status="pronto">
+                <div class="timeline-icon">📦</div>
+                <div class="timeline-content">
+                    <strong>Pronto</strong>
+                    <p>Seu pedido está pronto</p>
+                </div>
+            </div>
+            
+            <div class="timeline-item" data-status="saiu_entrega">
+                <div class="timeline-icon">🛵</div>
+                <div class="timeline-content">
+                    <strong>Saiu para Entrega</strong>
+                    <p>O entregador está a caminho</p>
+                </div>
+            </div>
+            
+            <div class="timeline-item" data-status="entregue">
+                <div class="timeline-icon">🎉</div>
+                <div class="timeline-content">
+                    <strong>Entregue</strong>
+                    <p>Pedido entregue com sucesso!</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resumo do Pedido -->
+        <div class="status-summary">
+            <h4>Resumo do Pedido</h4>
+            <div id="statusItems" class="status-items"></div>
+            <div class="status-total">
+                <strong>Total: <span id="statusTotal"></span></strong>
+            </div>
+        </div>
+        
+        <!-- Ações -->
+        <div class="status-actions">
+            <a id="rateLink" href="#" class="btn-secondary" style="display: none;">⭐ Avaliar Pedido</a>
+            <a href="/historico" class="btn-primary">Ver Histórico</a>
+        </div>
+    </div>
+    
+    <!-- Erro -->
+    <div id="errorBox" class="error-box" style="display: none;">
+        <span class="error-icon">😕</span>
+        <p>Pedido não encontrado</p>
+        <small>Verifique o número e tente novamente</small>
+    </div>
+</section>
+
+<div class="nav-buttons">
+    <a href="/" class="btn-secondary">← Voltar ao Cardápio</a>
+    <a href="/historico" class="btn-primary">Meus Pedidos</a>
+</div>
+
+<style>
+.search-box {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+.search-box label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.search-input-group input {
+    flex: 1;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.order-status {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 25px;
+}
+
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.status-header h3 {
+    font-size: 18px;
+}
+
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.novo { background: #e3f2fd; color: #1976d2; }
+.status-badge.confirmado { background: #e8f5e9; color: #388e3c; }
+.status-badge.preparando { background: #fff3e0; color: #f57c00; }
+.status-badge.pronto { background: #fce4ec; color: #c2185b; }
+.status-badge.saiu_entrega { background: #f3e5f5; color: #7b1fa2; }
+.status-badge.entregue { background: #e8f5e9; color: #2e7d32; }
+.status-badge.cancelado { background: #ffebee; color: #c62828; }
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+}
+
+.timeline-item {
+    position: relative;
+    padding: 15px 0;
+    opacity: 0.4;
+    transition: opacity 0.3s;
+}
+
+.timeline-item.active {
+    opacity: 1;
+}
+
+.timeline-item.active .timeline-icon {
+    background: var(--primary);
+    transform: scale(1.1);
+}
+
+.timeline-icon {
+    position: absolute;
+    left: -30px;
+    width: 30px;
+    height: 30px;
+    background: var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.timeline-content strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.timeline-content p {
+    font-size: 12px;
+    color: var(--text-light);
+    margin: 0;
+}
+
+.status-summary {
+    background: #f8f8f8;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.status-summary h4 {
+    font-size: 14px;
+    margin-bottom: 15px;
+    color: var(--text-light);
+}
+
+.status-items {
+    font-size: 13px;
+    margin-bottom: 15px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--border);
+}
+
+.status-item:last-child {
+    border-bottom: none;
+}
+
+.status-total {
+    text-align: right;
+    font-size: 16px;
+    color: var(--primary);
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.status-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.status-actions a {
+    flex: 1;
+    text-align: center;
+}
+
+.error-box {
+    text-align: center;
+    padding: 40px;
+    background: var(--card-bg);
+    border-radius: 16px;
+}
+
+.error-icon {
+    font-size: 50px;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.error-box p {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.error-box small {
+    color: var(--text-light);
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const statusOrder = ['novo', 'confirmado', 'preparando', 'pronto', 'saiu_entrega', 'entregue'];
+
+// Buscar pedido automaticamente se vier com ID na URL
+if (document.getElementById('orderId').value) {
+    searchOrder();
+}
+
+function searchOrder() {
+    const orderId = document.getElementById('orderId').value;
+    if (!orderId) {
+        alert('Digite o número do pedido');
+        return;
+    }
+    
+    document.getElementById('searchBox').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('orderStatus').style.display = 'none';
+    document.getElementById('errorBox').style.display = 'none';
+    
+    fetch(`/api/pedido/${orderId}`)
+        .then(r => {
+            if (!r.ok) throw new Error('Pedido não encontrado');
+            return r.json();
+        })
+        .then(data => {
+            showOrderStatus(data);
+        })
+        .catch(() => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('searchBox').style.display = 'block';
+            document.getElementById('errorBox').style.display = 'block';
+        });
+}
+
+function showOrderStatus(order) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('orderStatus').style.display = 'block';
+    
+    document.getElementById('statusOrderId').textContent = order.id;
+    
+    const statusBadge = document.getElementById('currentStatus');
+    statusBadge.textContent = order.status.replace('_', ' ');
+    statusBadge.className = 'status-badge ' + order.status;
+    
+    // Atualizar timeline
+    const currentIndex = statusOrder.indexOf(order.status);
+    document.querySelectorAll('.timeline-item').forEach((item, index) => {
+        if (index <= currentIndex) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+    
+    // Itens do pedido
+    const itemsHtml = order.itens.map(item => {
+        const compTotal = item.complementos.reduce((s, c) => s + c.preco, 0);
+        const total = (item.preco + compTotal) * item.quantidade;
+        return `
+            <div class="status-item">
+                <span>${item.quantidade}x ${item.nome}</span>
+                <span>R$ ${total.toFixed(2)}</span>
+            </div>
+        `;
+    }).join('');
+    document.getElementById('statusItems').innerHTML = itemsHtml;
+    document.getElementById('statusTotal').textContent = `R$ ${order.valores.total.toFixed(2)}`;
+    
+    // Mostrar botão de avaliar se ainda não avaliou
+    const rateLink = document.getElementById('rateLink');
+    if (!order.avaliacao) {
+        rateLink.href = `/avaliar?pedido=${order.id}`;
+        rateLink.style.display = 'inline-block';
+    } else {
+        rateLink.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

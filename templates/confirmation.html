@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Pedido Confirmado - Sakura Sushi{% endblock %}
+
+{% block content %}
+<section class="confirmation-section">
+    <div class="confirmation-icon">✅</div>
+    <h1>Pedido Confirmado!</h1>
+    <p class="confirmation-number">Pedido #{{ pedido_id }}</p>
+    
+    <div class="confirmation-message">
+        <p>Obrigado pelo seu pedido!</p>
+        <p>Em breve entraremos em contato pelo telefone fornecido para confirmar a entrega.</p>
+    </div>
+    
+    <div class="confirmation-info">
+        <div class="info-box">
+            <span class="info-icon">⏱️</span>
+            <div>
+                <strong>Tempo estimado</strong>
+                <p>45-60 minutos</p>
+            </div>
+        </div>
+        <div class="info-box">
+            <span class="info-icon">📞</span>
+            <div>
+                <strong>Dúvidas?</strong>
+                <p>(11) 3456-7890</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="confirmation-actions">
+        <a href="/acompanhar?pedido={{ pedido_id }}" class="btn-secondary">📍 Acompanhar Pedido</a>
+        <a href="/avaliar?pedido={{ pedido_id }}" class="btn-primary">⭐ Avaliar Agora</a>
+        <a href="/" class="btn-primary btn-outline">Fazer Novo Pedido</a>
+    </div>
+</section>
+
+<style>
+.confirmation-section {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.confirmation-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.confirmation-section h1 {
+    color: #2e7d32;
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.confirmation-number {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.confirmation-message {
+    background: #e8f5e9;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+}
+
+.confirmation-message p {
+    margin: 5px 0;
+    color: #333;
+}
+
+.confirmation-info {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.info-box {
+    background: #f5f5f5;
+    padding: 15px 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.info-icon {
+    font-size: 24px;
+}
+
+.info-box strong {
+    display: block;
+    font-size: 14px;
+}
+
+.info-box p {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.confirmation-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.confirmation-actions a {
+    padding: 14px 24px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.btn-secondary {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.btn-outline {
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+}
+
+.btn-outline:hover {
+    background: var(--primary);
+    color: white;
+}
+
+@media (max-width: 480px) {
+    .confirmation-info {
+        flex-direction: column;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Salvar ID do pedido no localStorage
+const pedidoId = {{ pedido_id }};
+if (pedidoId && pedidoId !== 'DEMO') {
+    let myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    if (!myOrders.includes(pedidoId)) {
+        myOrders.unshift(pedidoId); // Adiciona no início
+        localStorage.setItem('myOrders', JSON.stringify(myOrders));
+    }
+}
+</script>
+{% endblock %}
