@@ -21,7 +21,7 @@ db.init_app(app)
 # Configuracao do Google OAuth (manual)
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
-GOOGLE_REDIRECT_URI = 'http://localhost:5000/auth/callback'
+GOOGLE_REDIRECT_URI = 'https://9b04-45-168-6-183.ngrok-free.app/auth/callback'
 
 # URLs do Google OAuth
 GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
