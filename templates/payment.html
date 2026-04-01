@@ -65,7 +65,7 @@
 
 <div class="nav-buttons">
     <a href="/dados" class="btn-secondary">← Voltar aos Dados</a>
-    <button class="btn-primary btn-large" onclick="finalizeOrder()">
+    <button type="button" class="btn-primary btn-large" id="btnFinalizarPedido" onclick="finalizeOrder()">
         Finalizar Pedido ✓
     </button>
 </div>
@@ -73,7 +73,31 @@
 {% endblock %}
 
 {% block scripts %}
+<audio id="pedidoSomSrc" preload="auto" src="{{ url_for('static', filename='sounds/pedido-finalizado.mp3') }}"></audio>
 <script>
+let pedidoSomUnlocked = false;
+
+function getPedidoSom() {
+    return document.getElementById('pedidoSomSrc');
+}
+
+/** Libera áudio no Chrome após gesto do usuário (necessário antes do retorno assíncrono do fetch). */
+function unlockPedidoSom() {
+    if (pedidoSomUnlocked) return;
+    const a = getPedidoSom();
+    a.volume = 0.001;
+    a.play()
+        .then(() => {
+            a.pause();
+            a.currentTime = 0;
+            a.volume = 1;
+            pedidoSomUnlocked = true;
+        })
+        .catch(() => {});
+}
+
+document.getElementById('btnFinalizarPedido').addEventListener('click', unlockPedidoSom, { capture: true });
+
 // Mostrar/ocultar campo de troco
 document.querySelectorAll('input[name="payment"]').forEach(radio => {
     radio.addEventListener('change', function() {
@@ -160,16 +184,35 @@ function finalizeOrder() {
     .then(data => {
         if (data.success) {
             localStorage.removeItem('cart');
-            window.location.href = `/confirmacao?pedido=${data.order_id}`;
+            irConfirmacaoComSom(`/confirmacao?pedido=${data.order_id}`);
         }
     })
     .catch(err => {
         if (err.message !== 'Fechado') {
             console.error(err);
             localStorage.removeItem('cart');
-            window.location.href = '/confirmacao?pedido=DEMO';
+            irConfirmacaoComSom('/confirmacao?pedido=DEMO');
         }
     });
+}
+
+function irConfirmacaoComSom(url) {
+    const a = getPedidoSom();
+    a.currentTime = 0;
+    const ir = () => { window.location.href = url; };
+    const fallbackMs = 4000;
+    const timer = setTimeout(ir, fallbackMs);
+    const limparEIr = () => {
+        clearTimeout(timer);
+        ir();
+    };
+    a.onended = limparEIr;
+    a.play()
+        .then(() => {})
+        .catch(() => {
+            clearTimeout(timer);
+            ir();
+        });
 }
 
 loadSummary();
