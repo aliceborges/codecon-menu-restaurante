@@ -1,0 +1,91 @@
+Quero criar um frontend + backend em JS de cardápio digital, com as seguintes especificações
+
+Pode ser backend em JS
+Frontend em JS
+Não precisa de banco de dados nesse momento, somente processar o pedido e retornar ao front
+
+Cardápio digital
+
+- Tela 1
+    - Informações dos restaurantes
+    - Listagem de produtos genéricos
+        - Listagem de item
+        - Complementos
+- Tela 2
+    - Carrinho
+    - Alterar quantidade
+- Tela 3
+    - Tela de informações de usuários
+        - Nome
+        - Telefone
+- Tela 4
+    - Tela de pagamentos
+        - Dinheiro e cartão de crédito, débito
+        - Pagamentos apenas para pagar na entrega
+- Tela 5
+    - Tela de sucesso
+        - Mostrar as principais informações do pedido
+- Tela 6
+    - Tela de acompanhamentos de pedidos
+
+- Tela 7
+    - Tela de Histórico de pedidos
+    - O cliente poderá visualizar pedidos já realizados, coletando pelos IDs salvos no localstorage
+    - A partir dessa tela pode ir para avaliações ou olhar mais detalhes dos pedidos realizados
+
+Tela de avaliações
+    - Após realizar o pedido o cliente poderá avaliar o pedido realizado, não necessita ser um pedido entregue
+
+Gestor de pedido
+    - É onde o cliente recebe os pedidos e consegue realizar o fluxo dos status do pedido
+
+# Requisitos
+- Necessário realizar o pedido
+- Calcular itens corretamente
+- Precisa ser um fluxo linear de telas com possibilidade de voltar etapas também
+- Ao finalizar o pedido, deve salvar o ID do pedido no localstorage, então assim o cliente consegue coletar posteriormente
+
+---------
+
+implemente as seguintes telas abaixo
+
+- Tela 6
+    - Tela de acompanhamentos de pedidos
+
+- Tela 7
+    - Tela de Histórico de pedidos
+    - O cliente poderá visualizar pedidos já realizados, coletando pelos IDs salvos no localstorage
+    - A partir dessa tela pode ir para avaliações ou olhar mais detalhes dos pedidos realizados
+
+Tela de avaliações
+    - Após realizar o pedido o cliente poderá avaliar o pedido realizado, não necessita ser um pedido entregue
+
+- Ao finalizar o pedido, deve salvar o ID do pedido no localstorage, então assim o cliente consegue coletar posteriormente
+
+------
+
+Quero que seja desacoplado o tema do cardápio digital, pois o clientes está indeciso
+e gostaria de mudar de sushi para churrasco, então pode ser que mude novamente depois
+
+------
+
+Cada prato necessita ter uma média da avaliação na listagem principal e o cliente pode avaliar cada item selecionado no pedido de forma independente
+
+-------
+O cliente solicitou um novo ajuste agora o cardápio será das 11h as 15h com almoço executivo e das 18h as 23h será espeto corrido, fora esses horários o restaurante estará fechado, só preciso de algum botãozinho escondido para ajustar esse hora e testar mais rapidamente essa funcionalidade
+
+-------
+
+O cliente solicitou agora login com google, instale a lib da social media e crie uma tela para realizar esse cadastro ou fazer o login com essa funcionalidade. Outro ponto que muda também é que só pode avaliar se estiver logado com o Google
+
+-----
+
+O cliente quer hospedar essa aplicação, então necessita quero fazer de uma forma fácil e simples, é um SABOR deploy, pode ser algo local que ele consiga acessar no pc dele
+
+-----
+
+O cliente solicitou um sistema de fidelidade, a cada 10 pedidos do mesmo cliente, o próximo sai de graça
+
+-----
+
+O cliente ficou maluco, quer adicionar cardápio de açaí também a aplicação, esse cardápio de açaí necessita de complementos, tipo: leite condensado, leite em pó e tals
