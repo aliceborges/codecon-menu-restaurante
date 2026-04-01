@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, jsonify, Response, session, redirect, url_for
 from models import db, Configuracao, Restaurante, Categoria, Item, Complemento, Pedido, PedidoItem, AvaliacaoRestaurante, AvaliacaoItem, Usuario
 from themes import theme_manager, TEMAS
-from authlib.integrations.flask_client import OAuth
 from datetime import datetime
 from dotenv import load_dotenv
 import json
 import os
+import requests
+import secrets
 
 # Carregar variaveis do arquivo .env
 load_dotenv()
@@ -17,27 +18,15 @@ app.secret_key = os.environ.get('SECRET_KEY', 'restaurante-secret-key-2024')
 
 db.init_app(app)
 
-# Configuração OAuth Google
-oauth = OAuth(app)
-
-# Configuração do Google OAuth
-# Nota: Em produção, use variáveis de ambiente
+# Configuracao do Google OAuth (manual)
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REDIRECT_URI = 'http://localhost:5000/auth/callback'
 
-if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
-    google = oauth.register(
-        name='google',
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        access_token_url='https://accounts.google.com/o/oauth2/token',
-        access_token_params=None,
-        authorize_url='https://accounts.google.com/o/oauth2/auth',
-        authorize_params=None,
-        api_base_url='https://www.googleapis.com/oauth2/v1/',
-        userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
-        client_kwargs={'scope': 'openid email profile'},
-    )
+# URLs do Google OAuth
+GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo'
 
 
 # ==================== FUNÇÕES AUXILIARES ====================
@@ -113,10 +102,7 @@ def login_required(f):
 def get_current_user():
     """Retorna usuário atual logado"""
     if 'user_id' in session:
-        user = Usuario.query.get(session['user_id'])
-        print(f"[DEBUG] get_current_user: user_id={session['user_id']}, user={user}")
-        return user
-    print(f"[DEBUG] get_current_user: user_id não na sessão")
+        return Usuario.query.get(session['user_id'])
     return None
 
 
@@ -275,37 +261,102 @@ def login():
 
 @app.route('/auth/google')
 def auth_google():
-    """Inicia autenticação com Google"""
+    """Inicia autenticação com Google - OAuth manual"""
     if not GOOGLE_CLIENT_ID:
-        return 'Google OAuth não configurado. Defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET.', 500
+        return 'Google OAuth não configurado. Defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no arquivo .env', 500
     
-    redirect_uri = url_for('auth_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
+    # Gerar state para segurança
+    state = secrets.token_urlsafe(16)
+    session['oauth_state'] = state
+    
+    # Construir URL de autorização
+    params = {
+        'client_id': GOOGLE_CLIENT_ID,
+        'redirect_uri': GOOGLE_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'openid email profile',
+        'state': state,
+        'access_type': 'offline',
+        'prompt': 'consent'
+    }
+    
+    auth_url = f"{GOOGLE_AUTH_URL}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
+    print(f"[DEBUG] Redirecionando para Google OAuth: {auth_url[:100]}...")
+    
+    return redirect(auth_url)
 
 
 @app.route('/auth/callback')
 def auth_callback():
-    """Callback após autenticação Google"""
-    print(f"[DEBUG] Callback chamado! Args: {request.args}")
+    """Callback após autenticação Google - OAuth manual"""
+    print("=" * 60)
+    print("[DEBUG] CALLBACK CHAMADO!")
+    print(f"[DEBUG] Args: {dict(request.args)}")
+    print("=" * 60)
+    
+    # Verificar state
+    state = request.args.get('state')
+    if state != session.get('oauth_state'):
+        print("[ERRO] State mismatch!")
+        return redirect(url_for('login'))
+    
+    code = request.args.get('code')
+    if not code:
+        print("[ERRO] Código não recebido!")
+        return redirect(url_for('login'))
+    
     try:
-        print("[DEBUG] Tentando authorize_access_token...")
-        token = google.authorize_access_token()
-        resp = google.get('userinfo')
-        user_info = resp.json()
+        # Trocar código por token
+        token_data = {
+            'code': code,
+            'client_id': GOOGLE_CLIENT_ID,
+            'client_secret': GOOGLE_CLIENT_SECRET,
+            'redirect_uri': GOOGLE_REDIRECT_URI,
+            'grant_type': 'authorization_code'
+        }
+        
+        print("[DEBUG] Trocando código por token...")
+        token_response = requests.post(GOOGLE_TOKEN_URL, data=token_data)
+        token_json = token_response.json()
+        
+        if 'access_token' not in token_json:
+            print(f"[ERRO] Token não obtido: {token_json}")
+            return redirect(url_for('login'))
+        
+        access_token = token_json['access_token']
+        print(f"[DEBUG] Token obtido: {access_token[:20]}...")
+        
+        # Obter informações do usuário
+        user_response = requests.get(
+            GOOGLE_USERINFO_URL,
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        user_info = user_response.json()
+        
+        print(f"[DEBUG] User info: {user_info}")
         
         # Buscar ou criar usuário
-        usuario = Usuario.query.filter_by(google_id=user_info['sub']).first()
+        google_id = user_info.get('id')
+        email = user_info.get('email')
+        nome = user_info.get('name', email)
+        foto = user_info.get('picture', '')
+        
+        usuario = Usuario.query.filter_by(google_id=google_id).first()
         
         if not usuario:
             usuario = Usuario(
-                google_id=user_info['sub'],
-                email=user_info['email'],
-                nome=user_info.get('name', user_info['email']),
-                foto=user_info.get('picture', '')
+                google_id=google_id,
+                email=email,
+                nome=nome,
+                foto=foto
             )
             db.session.add(usuario)
+            print(f"[DEBUG] Novo usuário criado: {nome}")
         else:
             usuario.last_login = datetime.now()
+            usuario.nome = nome
+            usuario.foto = foto
+            print(f"[DEBUG] Usuário existente atualizado: {nome}")
         
         db.session.commit()
         
@@ -315,16 +366,16 @@ def auth_callback():
         session['user_email'] = usuario.email
         session['user_foto'] = usuario.foto
         
-        print(f"[DEBUG] Usuario logado: {usuario.nome} (ID: {usuario.id})")
+        print(f"[DEBUG] Usuário logado com sucesso! ID: {usuario.id}")
         print(f"[DEBUG] Session: {dict(session)}")
         
-        # Redirecionar para página anterior ou home
+        # Redirecionar
         next_page = request.args.get('next') or url_for('index')
         return redirect(next_page)
         
     except Exception as e:
         import traceback
-        print(f"[ERRO] OAuth Exception: {e}")
+        print(f"[ERRO] Exception: {e}")
         print(f"[ERRO] Traceback: {traceback.format_exc()}")
         return redirect(url_for('login'))
 
@@ -354,8 +405,7 @@ def debug_session():
     return jsonify({
         'session': dict(session),
         'user_id': session.get('user_id'),
-        'user_name': session.get('user_name'),
-        'user_email': session.get('user_email')
+        'user_name': session.get('user_name')
     })
 
 
