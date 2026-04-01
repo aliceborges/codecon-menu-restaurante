@@ -108,6 +108,130 @@ def get_current_user():
 
 # ==================== SEED DATABASE ====================
 
+def _complementos_acai_para_item(item_id):
+    """Complementos típicos de açaí; IDs únicos por item (coluna id ≤ 20 chars)."""
+    defs = [
+        ('lc', 'Leite condensado', 2.00),
+        ('lp', 'Leite em pó', 2.00),
+        ('gr', 'Granola', 2.00),
+        ('pac', 'Paçoca', 2.50),
+        ('ban', 'Banana', 1.50),
+        ('mor', 'Morango', 3.50),
+        ('nut', 'Nutella', 5.00),
+        ('nin', 'Creme Ninho', 3.50),
+        ('bis', 'Bis (2 unidades)', 2.50),
+        ('ovo', 'Ovomaltine', 3.00),
+        ('am', 'Amendoim', 1.50),
+        ('mel', 'Mel', 1.00),
+    ]
+    return [
+        {'id': f'a{item_id}-{k}', 'nome': nome, 'preco': preco}
+        for k, nome, preco in defs
+    ]
+
+
+def get_acai_categoria_data():
+    """Categoria Açaí: copos por tamanho + copos montados, todos com complementos opcionais."""
+    comp = _complementos_acai_para_item
+    return {
+        'id': 'acai',
+        'nome': 'Açaí — Copos montados',
+        'ordem': 7,
+        'icone': '🫐',
+        'horario': 'todos',
+        'itens': [
+            {
+                'id': 24,
+                'nome': 'Copo Açaí 300 ml',
+                'descricao': 'Açaí na medida; monte com os complementos de sua preferência.',
+                'preco': 14.90,
+                'imagem': '🫐',
+                'complementos': comp(24),
+            },
+            {
+                'id': 25,
+                'nome': 'Copo Açaí 500 ml',
+                'descricao': 'Porção generosa; ideal para combinar vários complementos.',
+                'preco': 19.90,
+                'imagem': '🫐',
+                'complementos': comp(25),
+            },
+            {
+                'id': 26,
+                'nome': 'Copo Açaí 700 ml',
+                'descricao': 'Tamanho família; monte do seu jeito.',
+                'preco': 24.90,
+                'imagem': '🫐',
+                'complementos': comp(26),
+            },
+            {
+                'id': 27,
+                'nome': 'Copo Montado Tradicional',
+                'descricao': '300 ml com banana, granola e mel já inclusos. Pode adicionar extras.',
+                'preco': 17.90,
+                'imagem': '🍌',
+                'complementos': comp(27),
+            },
+            {
+                'id': 28,
+                'nome': 'Copo Montado Premium',
+                'descricao': '500 ml com leite condensado, leite em pó, paçoca e granola inclusos.',
+                'preco': 26.90,
+                'imagem': '✨',
+                'complementos': comp(28),
+            },
+            {
+                'id': 29,
+                'nome': 'Copo Montado Nutella',
+                'descricao': '500 ml com Nutella, morango e granola na montagem.',
+                'preco': 28.90,
+                'imagem': '🍫',
+                'complementos': comp(29),
+            },
+        ],
+    }
+
+
+def _persist_categoria_cardapio(cat_data):
+    """Insere uma categoria e seus itens/complementos (sem commit)."""
+    categoria = Categoria(
+        id=cat_data['id'],
+        nome=cat_data['nome'],
+        ordem=cat_data['ordem'],
+        icone=cat_data['icone'],
+        horario=cat_data['horario'],
+    )
+    db.session.add(categoria)
+    for item_data in cat_data['itens']:
+        item = Item(
+            id=item_data['id'],
+            categoria_id=categoria.id,
+            nome=item_data['nome'],
+            descricao=item_data['descricao'],
+            preco=item_data['preco'],
+            imagem=item_data['imagem'],
+        )
+        db.session.add(item)
+        for comp_data in item_data.get('complementos', []):
+            db.session.add(
+                Complemento(
+                    id=comp_data['id'],
+                    item_id=item.id,
+                    nome=comp_data['nome'],
+                    preco=comp_data['preco'],
+                )
+            )
+
+
+def ensure_acai_menu():
+    """Garante a categoria Açaí em bancos já existentes (seed antigo sem açaí)."""
+    if Categoria.query.filter_by(id='acai').first():
+        return
+    _persist_categoria_cardapio(get_acai_categoria_data())
+    db.session.commit()
+    print('Cardápio de Açaí adicionado ao banco.')
+
+
 def seed_database():
     """Popula o banco com dados iniciais se estiver vazio"""
     
@@ -131,6 +255,8 @@ def seed_database():
         
         db.session.commit()
         print("Banco de dados populado com dados iniciais (Churrasco)!")
+    
+    ensure_acai_menu()
 
 
 def seed_churrasco_data():
@@ -219,35 +345,10 @@ def seed_churrasco_data():
         }
     ]
     
+    dados_categorias.append(get_acai_categoria_data())
+    
     for cat_data in dados_categorias:
-        categoria = Categoria(
-            id=cat_data['id'],
-            nome=cat_data['nome'],
-            ordem=cat_data['ordem'],
-            icone=cat_data['icone'],
-            horario=cat_data['horario']
-        )
-        db.session.add(categoria)
-        
-        for item_data in cat_data['itens']:
-            item = Item(
-                id=item_data['id'],
-                categoria_id=categoria.id,
-                nome=item_data['nome'],
-                descricao=item_data['descricao'],
-                preco=item_data['preco'],
-                imagem=item_data['imagem']
-            )
-            db.session.add(item)
-            
-            for comp_data in item_data.get('complementos', []):
-                complemento = Complemento(
-                    id=comp_data['id'],
-                    item_id=item.id,
-                    nome=comp_data['nome'],
-                    preco=comp_data['preco']
-                )
-                db.session.add(complemento)
+        _persist_categoria_cardapio(cat_data)
 
 
 # ==================== ROTAS DE AUTENTICAÇÃO ====================
