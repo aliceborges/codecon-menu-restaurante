@@ -3,8 +3,12 @@ from models import db, Configuracao, Restaurante, Categoria, Item, Complemento, 
 from themes import theme_manager, TEMAS
 from authlib.integrations.flask_client import OAuth
 from datetime import datetime
+from dotenv import load_dotenv
 import json
 import os
+
+# Carregar variaveis do arquivo .env
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///restaurante2.db'
@@ -109,7 +113,10 @@ def login_required(f):
 def get_current_user():
     """Retorna usuário atual logado"""
     if 'user_id' in session:
-        return Usuario.query.get(session['user_id'])
+        user = Usuario.query.get(session['user_id'])
+        print(f"[DEBUG] get_current_user: user_id={session['user_id']}, user={user}")
+        return user
+    print(f"[DEBUG] get_current_user: user_id não na sessão")
     return None
 
 
@@ -279,7 +286,9 @@ def auth_google():
 @app.route('/auth/callback')
 def auth_callback():
     """Callback após autenticação Google"""
+    print(f"[DEBUG] Callback chamado! Args: {request.args}")
     try:
+        print("[DEBUG] Tentando authorize_access_token...")
         token = google.authorize_access_token()
         resp = google.get('userinfo')
         user_info = resp.json()
@@ -306,12 +315,17 @@ def auth_callback():
         session['user_email'] = usuario.email
         session['user_foto'] = usuario.foto
         
+        print(f"[DEBUG] Usuario logado: {usuario.nome} (ID: {usuario.id})")
+        print(f"[DEBUG] Session: {dict(session)}")
+        
         # Redirecionar para página anterior ou home
         next_page = request.args.get('next') or url_for('index')
         return redirect(next_page)
         
     except Exception as e:
-        print(f"Erro OAuth: {e}")
+        import traceback
+        print(f"[ERRO] OAuth Exception: {e}")
+        print(f"[ERRO] Traceback: {traceback.format_exc()}")
         return redirect(url_for('login'))
 
 
@@ -332,6 +346,17 @@ def api_user():
             'user': user.to_dict()
         })
     return jsonify({'logged_in': False})
+
+
+@app.route('/debug/session')
+def debug_session():
+    """Debug da sessão"""
+    return jsonify({
+        'session': dict(session),
+        'user_id': session.get('user_id'),
+        'user_name': session.get('user_name'),
+        'user_email': session.get('user_email')
+    })
 
 
 # ==================== ROTAS DO CLIENTE ====================
